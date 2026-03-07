@@ -452,13 +452,121 @@ body.sidebar-collapse .sb-footer {
   border: 5px solid transparent;
   border-right-color: rgba(26,111,255,.25);
 }
+
+/* ═══════════════════════════════════════════
+   MEJORADAS CSS ANIMATIONS — Sidebar Pro
+═══════════════════════════════════════════ */
+
+/* Hover mejorado en items del menu */
+.sb-link:hover {
+  transform: translateX(2px) !important;
+  box-shadow: inset 2px 0 0 rgba(26,111,255,.3) !important;
+}
+
+/* Animación para iconos en hover */
+.sb-link:hover .sb-link-ico {
+  transform: scale(1.1);
+  color: #00e5ff !important;
+}
+
+/* Animación suave para badges */
+.sb-badge {
+  animation: badgePulse 2.5s ease-in-out infinite;
+}
+
+@keyframes badgePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* Sublinks con mejor hover */
+.sb-sublink:hover {
+  transform: translateX(3px);
+  background: rgba(26,111,255,.15) !important;
+  color: rgba(200,230,255,.95) !important;
+}
+
+/* ═══════════════════════════════════════════
+   QUICK ACCESS CARDS — Modal Content
+═══════════════════════════════════════════ */
+
+.ga-quick-access {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(26,111,255,.05);
+  border: 1px solid rgba(26,111,255,.15);
+  border-radius: 10px;
+  color: rgba(160,200,240,.8);
+  text-decoration: none;
+  transition: all .22s ease;
+  cursor: pointer;
+}
+
+.ga-quick-access:hover {
+  background: rgba(26,111,255,.12);
+  border-color: rgba(26,111,255,.35);
+  color: #fff;
+  transform: translateX(3px);
+  box-shadow: 0 4px 12px rgba(26,111,255,.15);
+}
+
+.ga-qa-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(26,111,255,.15);
+  border-radius: 8px;
+  color: #00e5ff;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: all .22s ease;
+}
+
+.ga-quick-access:hover .ga-qa-icon {
+  background: rgba(26,111,255,.25);
+  transform: scale(1.1);
+}
+
+.ga-qa-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ga-qa-title {
+  font-size: .78rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 2px;
+  line-height: 1.1;
+}
+
+.ga-qa-desc {
+  font-size: .65rem;
+  color: rgba(100,140,180,.6);
+  line-height: 1.2;
+}
+
+/* Responsive modal grid */
+@media (max-width: 640px) {
+  .ga-quick-access {
+    padding: 12px;
+  }
+
+  .ga-modal[style*="520px"] .ga-modal-bd-inner > div {
+    grid-template-columns: 1fr !important;
+  }
+}
 </style>
 
 <aside class="main-sidebar" style="position:fixed;top:0;left:0;height:100vh;">
 
   <!-- CLOSE BUTTON -->
   <div style="padding:10px 12px;display:flex;justify-content:flex-end;border-bottom:1px solid rgba(26,111,255,.1);">
-    <button onclick="document.body.classList.remove('sidebar-collapse');document.querySelector('.main-sidebar').classList.remove('show');document.getElementById('sidebarBackdrop').classList.remove('show');" style="background:rgba(26,111,255,.1);border:1px solid rgba(26,111,255,.2);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:rgba(150,180,220,.7);cursor:pointer;transition:all .2s;font-size:.85rem;padding:0;">
+    <button onclick="document.body.classList.remove('sidebar-collapse');document.querySelector('.main-sidebar').classList.remove('show');document.getElementById('sidebarBackdrop').classList.remove('show');document.body.style.overflow='';" style="background:rgba(26,111,255,.1);border:1px solid rgba(26,111,255,.2);border-radius:8px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:rgba(150,180,220,.7);cursor:pointer;transition:all .2s;font-size:.85rem;padding:0;">
       <i class="fas fa-times"></i>
     </button>
   </div>
@@ -580,33 +688,12 @@ body.sidebar-collapse .sb-footer {
     <?php if($showConfig): ?>
     <span class="sb-section">Configuración</span>
 
-    <div class="sb-item sb-dropdown <?= $confInConf ? 'open' : '' ?>" id="ddConf">
-      <div class="sb-link <?= $confInConf ? 'active' : '' ?>" onclick="sbToggle('ddConf')" style="cursor:pointer;">
+    <div class="sb-item">
+      <button onclick="gaModal('modConfig')" class="sb-link" style="cursor:pointer;border:none;background:none;padding:10px 12px;">
         <span class="sb-link-ico"><i class="fas fa-sliders-h"></i></span>
         <span class="sb-link-txt">Parámetros técnicos</span>
-        <i class="fas fa-chevron-right sb-dropdown-arrow"></i>
-      </div>
-      <div class="sb-submenu">
-        <?php
-          $confItems = [
-            ['categorias',  ['categorias','categoria_form'],  'Categorías'],
-            ['marcas',       ['marcas','marca_form'],           'Marcas'],
-            ['tipos_activo', ['tipos_activo','tipo_activo_form'],'Tipos de activo'],
-            ['sedes',        ['sedes','sede_form'],              'Sedes'],
-            ['areas',        ['areas','area_form'],              'Áreas'],
-            ['proveedores',  ['proveedores','proveedor_form'],   'Proveedores'],
-          ];
-          foreach($confItems as [$route2,$activeRoutes,$label]):
-            $isActive = in_array($current,$activeRoutes,true) ? 'active' : '';
-        ?>
-        <div class="sb-subitem">
-          <a href="<?= e(base_url()) ?>/index.php?route=<?= $route2 ?>"
-             class="sb-sublink <?= $isActive ?>">
-            <?= e($label) ?>
-          </a>
-        </div>
-        <?php endforeach; ?>
-      </div>
+        <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.4;font-size:.65rem;"></i>
+      </button>
     </div>
     <?php endif; ?>
 
@@ -614,38 +701,12 @@ body.sidebar-collapse .sb-footer {
     <?php if($showSec): ?>
     <span class="sb-section">Administración</span>
 
-    <div class="sb-item sb-dropdown <?= $secInSec ? 'open' : '' ?>" id="ddSec">
-      <div class="sb-link <?= $secInSec ? 'active' : '' ?>" onclick="sbToggle('ddSec')" style="cursor:pointer;">
+    <div class="sb-item">
+      <button onclick="gaModal('modAdmin')" class="sb-link" style="cursor:pointer;border:none;background:none;padding:10px 12px;">
         <span class="sb-link-ico"><i class="fas fa-user-shield"></i></span>
         <span class="sb-link-txt">Seguridad</span>
-        <i class="fas fa-chevron-right sb-dropdown-arrow"></i>
-      </div>
-      <div class="sb-submenu">
-        <?php if(can_perm('empresas.view')||can_perm('empresas.edit')): ?>
-        <div class="sb-subitem">
-          <a href="<?= e(base_url()) ?>/index.php?route=empresas"
-             class="sb-sublink <?= in_array($current,['empresas','empresa_form'],true)?'active':'' ?>">
-            Empresas
-          </a>
-        </div>
-        <?php endif; ?>
-        <?php if(can_perm('usuarios.view')||can_perm('usuarios.edit')): ?>
-        <div class="sb-subitem">
-          <a href="<?= e(base_url()) ?>/index.php?route=usuarios"
-             class="sb-sublink <?= in_array($current,['usuarios','usuario_form'],true)?'active':'' ?>">
-            Usuarios
-          </a>
-        </div>
-        <?php endif; ?>
-        <?php if(can_perm('roles.view')||can_perm('roles.edit')): ?>
-        <div class="sb-subitem">
-          <a href="<?= e(base_url()) ?>/index.php?route=roles"
-             class="sb-sublink <?= in_array($current,['roles','rol_form','rol_permisos'],true)?'active':'' ?>">
-            Roles y permisos
-          </a>
-        </div>
-        <?php endif; ?>
-      </div>
+        <i class="fas fa-arrow-right" style="margin-left:auto;opacity:.4;font-size:.65rem;"></i>
+      </button>
     </div>
     <?php endif; ?>
 
@@ -667,7 +728,151 @@ body.sidebar-collapse .sb-footer {
   </div>
 </aside>
 
+<!-- ════════════════════════════════════════════
+     CONFIGURATION MODAL
+════════════════════════════════════════════ -->
+<div class="ga-modal-bd" id="modConfig">
+  <div class="ga-modal" style="max-width:540px;">
+    <div class="ga-modal-bar"></div>
+    <div class="ga-modal-hd">
+      <div class="ga-modal-ttl"><i class="fas fa-sliders-h mr-2" style="color:#00e5ff;"></i>Parámetros Técnicos</div>
+      <button class="ga-modal-x" onclick="gaModalClose('modConfig')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ga-modal-bd-inner">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <!-- Categorías -->
+        <a href="<?= e(base_url()) ?>/index.php?route=categorias" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-tag"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Categorías</div>
+            <div class="ga-qa-desc">Clasificación de activos</div>
+          </div>
+        </a>
+        <!-- Marcas -->
+        <a href="<?= e(base_url()) ?>/index.php?route=marcas" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-hammer"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Marcas</div>
+            <div class="ga-qa-desc">Fabricantes/Proveedores</div>
+          </div>
+        </a>
+        <!-- Tipos de Activo -->
+        <a href="<?= e(base_url()) ?>/index.php?route=tipos_activo" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-boxes"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Tipos Activo</div>
+            <div class="ga-qa-desc">Definición de tipos</div>
+          </div>
+        </a>
+        <!-- Sedes -->
+        <a href="<?= e(base_url()) ?>/index.php?route=sedes" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-map-marker-alt"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Sedes</div>
+            <div class="ga-qa-desc">Ubicaciones físicas</div>
+          </div>
+        </a>
+        <!-- Áreas -->
+        <a href="<?= e(base_url()) ?>/index.php?route=areas" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-th-large"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Áreas</div>
+            <div class="ga-qa-desc">Departamentos/Zonas</div>
+          </div>
+        </a>
+        <!-- Proveedores -->
+        <a href="<?= e(base_url()) ?>/index.php?route=proveedores" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-truck"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Proveedores</div>
+            <div class="ga-qa-desc">Servicios y productos</div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div class="ga-modal-ft">
+      <button onclick="gaModalClose('modConfig')" class="dash-btn dash-btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     ADMINISTRATION MODAL
+════════════════════════════════════════════ -->
+<div class="ga-modal-bd" id="modAdmin">
+  <div class="ga-modal" style="max-width:480px;">
+    <div class="ga-modal-bar"></div>
+    <div class="ga-modal-hd">
+      <div class="ga-modal-ttl"><i class="fas fa-user-shield mr-2" style="color:#00e5ff;"></i>Seguridad</div>
+      <button class="ga-modal-x" onclick="gaModalClose('modAdmin')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="ga-modal-bd-inner">
+      <div style="display:grid;grid-template-columns:1fr;gap:12px;">
+        <!-- Empresas -->
+        <a href="<?= e(base_url()) ?>/index.php?route=empresas" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-building"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Empresas</div>
+            <div class="ga-qa-desc">Gestión de tenants/empresas</div>
+          </div>
+        </a>
+        <!-- Usuarios -->
+        <a href="<?= e(base_url()) ?>/index.php?route=usuarios" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-users"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Usuarios</div>
+            <div class="ga-qa-desc">Usuarios del sistema</div>
+          </div>
+        </a>
+        <!-- Roles y Permisos -->
+        <a href="<?= e(base_url()) ?>/index.php?route=roles" class="ga-quick-access">
+          <div class="ga-qa-icon"><i class="fas fa-lock"></i></div>
+          <div class="ga-qa-content">
+            <div class="ga-qa-title">Roles y Permisos</div>
+            <div class="ga-qa-desc">Control de acceso (RBAC)</div>
+          </div>
+        </a>
+      </div>
+    </div>
+    <div class="ga-modal-ft">
+      <button onclick="gaModalClose('modAdmin')" class="dash-btn dash-btn-ghost">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script>
+// Funciones globales para modales
+function gaModal(id) {
+  const m = document.getElementById(id);
+  if (m) {
+    m.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+function gaModalClose(id) {
+  const m = document.getElementById(id);
+  if (m) {
+    m.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+}
+
+// Cerrar modal al hacer click en el backdrop
+document.querySelectorAll('.ga-modal-bd').forEach(bd => {
+  bd.addEventListener('click', e => {
+    if (e.target === bd) gaModalClose(bd.id);
+  });
+});
+
+// Cerrar modales con ESC
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.ga-modal-bd.open').forEach(m => gaModalClose(m.id));
+  }
+});
+
+// Toggle sidebar dropdown
 function sbToggle(id) {
   const el = document.getElementById(id);
   if (!el) return;
