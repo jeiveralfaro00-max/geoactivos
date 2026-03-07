@@ -13,18 +13,25 @@ require_once __DIR__ . '/../app/core/Auth.php';
 /* ===================== ROUTE ===================== */
 $route = $_GET['route'] ?? 'dashboard';
 
-/* ===================== RUTAS PÚBLICAS (NO LOGIN) ===================== 
-   FIX REAL: el QR debe abrir verificación SIN pedir login
-   - calibracion_verificar: página pública por token
-   Puedes agregar más rutas públicas aquí cuando lo necesites
+/* ===================== RUTAS PÚBLICAS (NO LOGIN) =====================
+   - login / logout: autenticación
+   - calibracion_verificar: página pública por token (QR sin login)
+   Agregar aquí cualquier ruta que no requiera autenticación.
 =================================================== */
 $publicRoutes = [
+  `splash`, // Página de bienvenida (sin login) — opcional
   'login',
-  'logout', // (logout realmente redirige, pero lo dejamos)
+  'logout',
   'calibracion_verificar',
 ];
 
 /* ===================== AUTH ===================== */
+// splash is a public welcome page
+if ($route === 'splash') {
+  require __DIR__ . '/../app/views/auth/splash.php';
+  exit;
+}
+
 if ($route === 'login') {
   require __DIR__ . '/../app/views/auth/login.php';
   exit;
@@ -32,11 +39,11 @@ if ($route === 'login') {
 
 if ($route === 'logout') {
   Auth::logout();
-  redirect('index.php?route=login');
+  redirect('index.php?route=splash');
 }
 
-/* ===================== PROTECCIÓN GLOBAL ===================== 
-   FIX REAL: solo pedimos login si NO es ruta pública
+/* ===================== PROTECCIÓN GLOBAL =====================
+   Solo pedimos login si NO es ruta pública.
 =================================================== */
 if (!in_array($route, $publicRoutes, true)) {
   Auth::requireLogin();
@@ -45,13 +52,13 @@ if (!in_array($route, $publicRoutes, true)) {
 /* ===================== ROUTER ===================== */
 switch ($route) {
 
-  /* ================= DASHBOARD ================= */
+  /* ─────────────────── DASHBOARD ─────────────────── */
   case 'dashboard':
     Auth::requirePerm('dashboard.view');
     require __DIR__ . '/../app/views/dashboard/index.php';
     break;
 
-  /* ================= ACTIVOS ================= */
+  /* ─────────────────── ACTIVOS ─────────────────── */
   case 'activos':
     Auth::requirePerm('activos.view');
     require __DIR__ . '/../app/views/activos/index.php';
@@ -103,6 +110,7 @@ switch ($route) {
     require __DIR__ . '/../app/views/activos/activos_purge.php';
     break;
 
+  /* ─────────────────── AUDITORÍA ─────────────────── */
   case 'audit_log':
     require __DIR__ . '/../app/views/auditoria/audit_log.php';
     break;
@@ -111,22 +119,15 @@ switch ($route) {
     require __DIR__ . '/../app/views/auditoria/activo_auditoria.php';
     break;
 
-  case 'activo_auditoria':
-    require __DIR__ . '/../app/views/auditoria/timeline.php';
-    break;
-
   case 'auditoria_usuario':
     require __DIR__ . '/../app/views/auditoria/auditoria_usuario.php';
-    break;
-
-  case 'activo_auditoria':
-    require __DIR__ . '/../app/views/activos/activo_auditoria.php';
     break;
 
   case 'mantenimiento_auditoria':
     require __DIR__ . '/../app/views/mantenimientos/mantenimiento_auditoria.php';
     break;
 
+  /* ─────────────────── COMPONENTES ─────────────────── */
   case 'componente_form':
     require __DIR__ . '/../app/views/componentes/componente_form.php';
     break;
@@ -135,137 +136,17 @@ switch ($route) {
     require __DIR__ . '/../app/actions/componentes/delete.php';
     break;
 
-  // Etiqueta QR imprimible (sticker)
+  /* ─────────────────── QR / ETIQUETAS ─────────────────── */
   case 'activo_qr_etiqueta':
     require __DIR__ . '/../app/views/activos/activo_qr_etiqueta.php';
     break;
 
-  // (Opcional) Alias rápido para abrir hoja de vida desde QR
   case 'activo_qr':
-    // redirige a hoja de vida (o detalle)
     $id = (int)($_GET['id'] ?? 0);
-    header("Location: index.php?route=activo_hoja_vida&id=".$id);
+    header('Location: index.php?route=activo_hoja_vida&id=' . $id);
     exit;
 
-  case 'mantenimiento_print':
-    require __DIR__ . '/../app/views/mantenimientos/mantenimiento_print.php';
-    break;
-
-  case 'ajax_act_foto_upload':
-    require __DIR__ . '/../app/ajax/act_foto_upload.php';
-    exit;
-
-  case 'ajax_act_foto_delete':
-    require_once __DIR__ . '/../app/ajax/act_foto_delete.php';
-    exit;
-
-  case 'ajax_act_adj_download':
-    require __DIR__ . '/../app/ajax/act_adj_download.php';
-    exit;
-
-  case 'ajax_act_adj_preview':
-    require __DIR__ . '/../app/ajax/act_adj_preview.php';
-    exit;
-
-  // ===== Calibraciones =====
-  case 'calibraciones':
-    require_once __DIR__ . '/../app/views/calibraciones/index.php';
-    exit;
-
-  case 'calibracion_form':
-    require_once __DIR__ . '/../app/views/calibraciones/form.php';
-    exit;
-
-  case 'calibracion_detalle':
-    require_once __DIR__ . '/../app/views/calibraciones/detalle.php';
-    exit;
-
-  case 'calibracion_certificado':
-    require __DIR__ . '/../app/views/calibraciones/certificado_print.php';
-    break;
-
-  // ✅ NUEVO: Editar certificado (corrección rápida)
-  case 'calibracion_certificado_edit':
-    require __DIR__ . '/../app/views/calibraciones/certificado_edit.php';
-    break;
-
-
-  // ===== Calibraciones: puntos =====
-case 'calibracion_puntos':
-  require __DIR__ . '/../app/views/calibraciones/puntos.php';
-  break;
-
-case 'calibracion_punto_form':
-  require __DIR__ . '/../app/views/calibraciones/punto_form.php';
-  break;
-  
-  // ===== Patrones =====
-  case 'patrones':
-    require_once __DIR__ . '/../app/views/patrones/index.php';
-    exit;
-
-  case 'patron_form':
-    require_once __DIR__ . '/../app/views/patrones/form.php';
-    exit;
-
-  case 'patron_delete':
-    require_once __DIR__ . '/../app/views/patrones/delete.php';
-    exit;
-
-  // ===== AJAX Calibraciones (puntos + patrones + cierre) =====
-  case 'ajax_cal_punto_add':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_punto_add.php';
-    exit;
-
-  case 'ajax_cal_punto_delete':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_punto_delete.php';
-    exit;
-
-  case 'ajax_cal_patron_add':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_patron_add.php';
-    exit;
-
-  case 'ajax_cal_patron_delete':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_patron_delete.php';
-    exit;
-
-  case 'ajax_cal_cerrar':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_cerrar.php';
-    exit;
-
-  case 'ajax_cal_anular':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_anular.php';
-    exit;
-
-  /* ✅ ESTE ES EL FIX REAL: ejecutar TU archivo real app/ajax/patron_puntos.php */
-  case 'patron_puntos_ajax':
-    require __DIR__ . '/../app/ajax/patron_puntos.php';
-    exit;
-
-  // ===== Calibraciones (pública) =====
-  case 'calibracion_verificar':
-    // FIX REAL: esta ruta es pública (sin login) por token
-    require_once __DIR__ . '/../app/views/calibraciones/verificar.php';
-    exit;
-
-  // ===== Adjuntos calibración (AJAX) =====
-  case 'ajax_cal_adj_upload':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_upload.php';
-    exit;
-
-  case 'ajax_cal_adj_preview':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_preview.php';
-    exit;
-
-  case 'ajax_cal_adj_download':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_download.php';
-    exit;
-
-  case 'ajax_cal_adj_delete':
-    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_delete.php';
-    exit;
-
-  /* ================= MANTENIMIENTOS ================= */
+  /* ─────────────────── MANTENIMIENTOS ─────────────────── */
   case 'mantenimientos':
     Auth::requirePerm('mantenimientos.view');
     require __DIR__ . '/../app/views/mantenimientos/index.php';
@@ -291,7 +172,62 @@ case 'calibracion_punto_form':
     require __DIR__ . '/../app/views/mantenimientos/detalle.php';
     break;
 
-  /* ================= CONFIGURACIÓN ================= */
+  case 'mantenimiento_print':
+    require __DIR__ . '/../app/views/mantenimientos/mantenimiento_print.php';
+    break;
+
+  /* ─────────────────── CALIBRACIONES ─────────────────── */
+  case 'calibraciones':
+    require_once __DIR__ . '/../app/views/calibraciones/index.php';
+    exit;
+
+  case 'calibracion_form':
+    require_once __DIR__ . '/../app/views/calibraciones/form.php';
+    exit;
+
+  case 'calibracion_detalle':
+    require_once __DIR__ . '/../app/views/calibraciones/detalle.php';
+    exit;
+
+  case 'calibracion_certificado':
+    require __DIR__ . '/../app/views/calibraciones/certificado_print.php';
+    break;
+
+  case 'calibracion_certificado_edit':
+    require __DIR__ . '/../app/views/calibraciones/certificado_edit.php';
+    break;
+
+  case 'calibracion_puntos':
+    require __DIR__ . '/../app/views/calibraciones/puntos.php';
+    break;
+
+  case 'calibracion_punto_form':
+    require __DIR__ . '/../app/views/calibraciones/punto_form.php';
+    break;
+
+  case 'calibracion_verificar':
+    // Ruta pública (sin login) — acceso por token desde QR
+    require_once __DIR__ . '/../app/views/calibraciones/verificar.php';
+    exit;
+
+  /* ─────────────────── PATRONES ─────────────────── */
+  case 'patrones':
+    require_once __DIR__ . '/../app/views/patrones/index.php';
+    exit;
+
+  case 'patron_form':
+    require_once __DIR__ . '/../app/views/patrones/form.php';
+    exit;
+
+  case 'patron_delete':
+    require_once __DIR__ . '/../app/views/patrones/delete.php';
+    exit;
+
+  case 'patron_puntos_ajax':
+    require __DIR__ . '/../app/ajax/patron_puntos.php';
+    exit;
+
+  /* ─────────────────── CONFIGURACIÓN ─────────────────── */
   case 'categorias':
   case 'categoria_form':
   case 'marcas':
@@ -306,22 +242,22 @@ case 'calibracion_punto_form':
   case 'tipo_activo_form':
     Auth::requirePerm('config.view');
     require __DIR__ . '/../app/views/' . match($route) {
-      'categorias'        => 'config/categorias/index.php',
-      'categoria_form'    => 'config/categorias/form.php',
-      'marcas'            => 'config/marcas/index.php',
-      'marca_form'        => 'config/marcas/form.php',
-      'sedes'             => 'config/sedes/index.php',
-      'sede_form'         => 'config/sedes/form.php',
-      'areas'             => 'config/areas/index.php',
-      'area_form'         => 'config/areas/form.php',
-      'proveedores'       => 'config/proveedores/index.php',
-      'proveedor_form'    => 'config/proveedores/form.php',
-      'tipos_activo'      => 'config/tipos_activo/index.php',
-      'tipo_activo_form'  => 'config/tipos_activo/form.php',
+      'categorias'       => 'config/categorias/index.php',
+      'categoria_form'   => 'config/categorias/form.php',
+      'marcas'           => 'config/marcas/index.php',
+      'marca_form'       => 'config/marcas/form.php',
+      'sedes'            => 'config/sedes/index.php',
+      'sede_form'        => 'config/sedes/form.php',
+      'areas'            => 'config/areas/index.php',
+      'area_form'        => 'config/areas/form.php',
+      'proveedores'      => 'config/proveedores/index.php',
+      'proveedor_form'   => 'config/proveedores/form.php',
+      'tipos_activo'     => 'config/tipos_activo/index.php',
+      'tipo_activo_form' => 'config/tipos_activo/form.php',
     };
     break;
 
-  /* ================= EMPRESAS ================= */
+  /* ─────────────────── EMPRESAS ─────────────────── */
   case 'empresas':
     Auth::requirePerm('empresas.view');
     require __DIR__ . '/../app/views/empresas/index.php';
@@ -332,7 +268,7 @@ case 'calibracion_punto_form':
     require __DIR__ . '/../app/views/empresas/form.php';
     break;
 
-  /* ================= USUARIOS ================= */
+  /* ─────────────────── USUARIOS ─────────────────── */
   case 'usuarios':
     Auth::requirePerm('usuarios.view');
     require __DIR__ . '/../app/views/usuarios/index.php';
@@ -343,7 +279,7 @@ case 'calibracion_punto_form':
     require __DIR__ . '/../app/views/usuarios/form.php';
     break;
 
-  /* ================= ROLES ================= */
+  /* ─────────────────── ROLES ─────────────────── */
   case 'roles':
     Auth::requirePerm('roles.view');
     require __DIR__ . '/../app/views/roles/index.php';
@@ -356,7 +292,7 @@ case 'calibracion_punto_form':
     require __DIR__ . '/../app/views/roles/' . str_replace('rol_', '', $route) . '.php';
     break;
 
-  /* ================= AJAX ================= */
+  /* ─────────────────── AJAX — ACTIVOS ─────────────────── */
   case 'ajax_next_codigo_activo':
     Auth::requirePerm('activos.edit');
     require __DIR__ . '/../app/ajax/next_codigo_activo.php';
@@ -367,22 +303,37 @@ case 'calibracion_punto_form':
     require __DIR__ . '/../app/ajax/tipo_reglas.php';
     break;
 
+  case 'ajax_act_foto_upload':
+    Auth::requirePerm('activos.edit');
+    require __DIR__ . '/../app/ajax/act_foto_upload.php';
+    exit;
+
+  case 'ajax_act_foto_delete':
+    Auth::requirePerm('activos.edit');
+    require_once __DIR__ . '/../app/ajax/act_foto_delete.php';
+    exit;
+
   case 'ajax_act_adj_upload':
     Auth::requirePerm('activos.edit');
     require __DIR__ . '/../app/ajax/activos_adj_upload.php';
     break;
 
   case 'ajax_act_adj_download':
+    Auth::requirePerm('activos.view');
+    require __DIR__ . '/../app/ajax/act_adj_download.php';
+    exit;
+
   case 'ajax_act_adj_preview':
     Auth::requirePerm('activos.view');
-    require __DIR__ . '/../app/ajax/' . str_replace('ajax_', '', $route) . '.php';
-    break;
+    require __DIR__ . '/../app/ajax/act_adj_preview.php';
+    exit;
 
   case 'ajax_act_adj_delete':
     Auth::requirePerm('activos.edit');
     require __DIR__ . '/../app/ajax/activos_adj_delete.php';
     break;
 
+  /* ─────────────────── AJAX — MANTENIMIENTOS ─────────────────── */
   case 'ajax_mant_adj_upload':
     Auth::requirePerm('mantenimientos.edit');
     require __DIR__ . '/../app/ajax/mant_adj_upload.php';
@@ -398,8 +349,50 @@ case 'calibracion_punto_form':
     require __DIR__ . '/../app/ajax/mant_adj_delete.php';
     break;
 
-  /* ================= 404 ================= */
+  /* ─────────────────── AJAX — CALIBRACIONES ─────────────────── */
+  case 'ajax_cal_punto_add':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_punto_add.php';
+    exit;
+
+  case 'ajax_cal_punto_delete':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_punto_delete.php';
+    exit;
+
+  case 'ajax_cal_patron_add':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_patron_add.php';
+    exit;
+
+  case 'ajax_cal_patron_delete':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_patron_delete.php';
+    exit;
+
+  case 'ajax_cal_cerrar':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_cerrar.php';
+    exit;
+
+  case 'ajax_cal_anular':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_anular.php';
+    exit;
+
+  case 'ajax_cal_adj_upload':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_upload.php';
+    exit;
+
+  case 'ajax_cal_adj_preview':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_preview.php';
+    exit;
+
+  case 'ajax_cal_adj_download':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_download.php';
+    exit;
+
+  case 'ajax_cal_adj_delete':
+    require_once __DIR__ . '/../app/ajax/ajax_cal_adj_delete.php';
+    exit;
+
+  /* ─────────────────── 404 ─────────────────── */
   default:
     http_response_code(404);
-    echo "404 - Ruta no encontrada";
+    echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>404</title></head><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#F5F8FA;"><div style="text-align:center;color:#4E6D8C;"><div style="font-size:4rem;font-weight:800;color:#0BA896;">404</div><div style="font-size:1.1rem;margin-top:8px;">Ruta no encontrada: <code>' . htmlspecialchars($route) . '</code></div><a href="index.php" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#0BA896;color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">Ir al inicio</a></div></body></html>';
+    break;
 }

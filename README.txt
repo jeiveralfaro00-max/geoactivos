@@ -46,7 +46,7 @@ VALUES (1, 1, 'Administrador', 'admin@demo.com', 'PEGA_AQUI_EL_HASH', 'ACTIVO');
 - Pass: Admin123*
 
 ## 5) Entrar
-http://localhost/geoactivos/public/index.php?route=login
+http://localhost/geoactivos/public/index.php?route=splash
 
 ## Nota
 Cuando ya funcione, borra:

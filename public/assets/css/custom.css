@@ -1,36 +1,44 @@
 /* =======================
-   HEADER PRO (GeSaProv)
+   HEADER PRO (Geoactivos)
 ======================= */
 .navbar-pro{
   border-bottom: 1px solid rgba(0,0,0,.06);
-  background: linear-gradient(90deg, rgba(13,110,253,.10), rgba(255,255,255,.95));
+  background: linear-gradient(90deg, rgba(30,64,175,.10), rgba(255,255,255,.95));
   backdrop-filter: blur(6px);
+  transition: all 0.3s ease;
 }
 .brand-chip{
   display:flex; align-items:center; gap:.65rem;
   padding:.25rem .6rem;
   border-radius: 999px;
-  background: rgba(13,110,253,.09);
-  border: 1px solid rgba(13,110,253,.15);
+  background: rgba(30,64,175,.09);
+  border: 1px solid rgba(30,64,175,.15);
   white-space: nowrap;
+  transition: all 0.3s ease;
+}
+.brand-chip:hover {
+  background: rgba(30,64,175,.15);
+  transform: translateY(-1px);
 }
 .brand-chip .logo{
   width:34px; height:34px; border-radius: 50%;
   display:flex; align-items:center; justify-content:center;
-  background: rgba(13,110,253,.18);
-  border: 1px solid rgba(13,110,253,.18);
+  background: rgba(30,64,175,.18);
+  border: 1px solid rgba(30,64,175,.18);
+  transition: all 0.3s ease;
 }
-.brand-chip .logo i{ font-size:15px; color:#0d6efd; }
+.brand-chip .logo i{ font-size:15px; color:#1e40af; }
 .brand-chip .txt{ line-height:1.05; }
 .brand-chip .txt .main{ font-weight:900; letter-spacing:.2px; }
-.brand-chip .txt .sub{ font-size:.78rem; color:#6c757d; margin-top:1px; }
+.brand-chip .txt .sub{ font-size:.78rem; color:#64748b; margin-top:1px; }
 .plan-badge{
   font-size:.70rem; font-weight:900; letter-spacing:.6px;
   padding:.25rem .45rem; border-radius: 10px;
-  background: rgba(255,193,7,.18);
-  border: 1px solid rgba(255,193,7,.35);
-  color:#b78103;
+  background: rgba(100,116,139,.18);
+  border: 1px solid rgba(100,116,139,.35);
+  color:#475569;
   text-transform: uppercase;
+  transition: all 0.3s ease;
 }
 .tenant-pill{
   display:inline-flex; align-items:center; gap:.45rem;
@@ -39,11 +47,13 @@
   border: 1px solid rgba(0,0,0,.06);
   color:#495057;
   max-width: 320px;
+  transition: all 0.3s ease;
 }
 .tenant-pill .dot{
   width:8px; height:8px; border-radius:50%;
-  background:#28a745;
-  box-shadow: 0 0 0 3px rgba(40,167,69,.15);
+  background:#1e40af;
+  box-shadow: 0 0 0 3px rgba(30,64,175,.15);
+  transition: all 0.3s ease;
 }
 .tenant-pill .name{
   font-size:.83rem;
@@ -59,11 +69,16 @@
   border-radius: 999px;
   background: rgba(255,255,255,.75);
   border: 1px solid rgba(0,0,0,.06);
+  transition: all 0.3s ease;
+}
+.user-mini:hover {
+  background: rgba(255,255,255,.9);
 }
 .user-mini .avatar{
   width:34px; height:34px; border-radius: 50%;
   display:flex; align-items:center; justify-content:center;
   background: rgba(0,0,0,.06);
+  transition: all 0.3s ease;
 }
 .user-mini .avatar i{ opacity:.85; }
 .user-mini .meta{ line-height:1.05; min-width:0; }
@@ -72,7 +87,7 @@
   white-space: nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .user-mini .meta .r{
-  font-size:.76rem; color:#6c757d; max-width: 180px;
+  font-size:.76rem; color:#64748b; max-width: 180px;
   white-space: nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 
