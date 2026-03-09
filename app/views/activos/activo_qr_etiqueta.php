@@ -5,24 +5,30 @@ require_once __DIR__ . '/../../config/db.php';
 
 Auth::requireLogin();
 
-$tenantId = Auth::tenantId();
+$isSuper = Auth::isSuperadmin();
+$tenantIdParam = (int)($_GET['tenant_id'] ?? 0);
+
+if ($isSuper && $tenantIdParam > 0) {
+    $tenantId = $tenantIdParam;
+} else {
+    $tenantId = Auth::tenantId();
+}
+
 $id = (int)($_GET['id'] ?? 0);
 
 if ($id <= 0) { http_response_code(400); echo "ID inválido"; exit; }
 
-/* ---------------- Tenant (Empresa) ---------------- */
 $tenant = null;
 try {
-  $tq = db()->prepare("SELECT id, nombre, nit, email, telefono, direccion, ciudad FROM tenants WHERE id=:t LIMIT 1");
+  $tq = db()->prepare("SELECT id, nombre, nit, email, telefono, direccion, ciudad, logo FROM tenants WHERE id=:t LIMIT 1");
   $tq->execute([':t'=>$tenantId]);
   $tenant = $tq->fetch();
 } catch (Exception $e) { $tenant = null; }
 
 function e2($s){ return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8'); }
 
-/* ---------------- Activo (info compacta) ---------------- */
 $st = db()->prepare("
-  SELECT a.id, a.codigo_interno, a.nombre, a.estado, a.modelo, a.serial, a.placa,
+  SELECT a.id, a.codigo_interno, a.nombre, a.estado, a.modelo, a.serial, a.placa, a.foto,
          c.nombre AS categoria,
          t.nombre AS tipo, t.codigo AS tipo_codigo,
          ar.nombre AS area, s.nombre AS sede
@@ -39,15 +45,13 @@ $activo = $st->fetch();
 
 if (!$activo) { http_response_code(404); echo "Activo no encontrado"; exit; }
 
-/* ---------------- URL destino del QR ---------------- */
-$modo = ($_GET['to'] ?? 'hoja'); // 'hoja' | 'detalle'
+$modo = ($_GET['to'] ?? 'hoja');
 if ($modo === 'detalle') {
   $dest = base_url() . "/index.php?route=activo_detalle&id=".(int)$activo['id'];
 } else {
   $dest = base_url() . "/index.php?route=activo_hoja_vida&id=".(int)$activo['id'];
 }
 
-/* ---------------- Tamaño etiqueta (mm) ---------------- */
 $w = (int)($_GET['w'] ?? 80);
 $h = (int)($_GET['h'] ?? 50);
 if ($w < 40) $w = 40;
@@ -55,22 +59,21 @@ if ($h < 25) $h = 25;
 if ($w > 120) $w = 120;
 if ($h > 80) $h = 80;
 
-/* ---------------- Textos ---------------- */
-$empresaNombre = $tenant && !empty($tenant['nombre']) ? (string)$tenant['nombre'] : '—';
+$empresaNombre = $tenant && !empty($tenant['nombre']) ? (string)$tenant['nombre'] : 'GeoActivos';
 $empresaNit    = $tenant && !empty($tenant['nit']) ? (string)$tenant['nit'] : '';
+$empresaLogo   = $tenant && !empty($tenant['logo']) ? (string)$tenant['logo'] : '';
 
 $ubic = '';
 if (!empty($activo['sede'])) $ubic .= (string)$activo['sede'];
 if (!empty($activo['area'])) $ubic .= ($ubic ? ' - ' : '') . (string)$activo['area'];
 if ($ubic === '') $ubic = '—';
 
-$tipoNombre = !empty($activo['tipo']) ? (string)$activo['tipo'] : '';
-$tipoCod    = !empty($activo['tipo_codigo']) ? (string)$activo['tipo_codigo'] : '';
-$tipoTxt    = ($tipoNombre === '') ? '—' : (($tipoCod !== '' ? ($tipoCod . ' · ') : '') . $tipoNombre);
-
 $codigo = (string)($activo['codigo_interno'] ?? '');
 $nombre = (string)($activo['nombre'] ?? '');
 $estado = (string)($activo['estado'] ?? '');
+$serial = (string)($activo['serial'] ?? '');
+$modelo = (string)($activo['modelo'] ?? '');
+$categoria = (string)($activo['categoria'] ?? '');
 
 function badge_estado($estado){
   $estado = (string)$estado;
@@ -79,7 +82,6 @@ function badge_estado($estado){
   if ($estado === 'BAJA') return 'rojo';
   return 'gris';
 }
-
 ?>
 <!doctype html>
 <html lang="es">
@@ -87,189 +89,242 @@ function badge_estado($estado){
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Etiqueta QR · <?= e2($codigo) ?></title>
-
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
-
   <style>
-    body{ margin:0; font-family: Arial, Helvetica, sans-serif; color:#111; }
-    .no-print{ padding:10px; text-align:right; }
-    .btn{
-      display:inline-block; padding:8px 10px; border-radius:6px;
-      background:#0d6efd; color:#fff; text-decoration:none; font-size:13px;
-      border:0; cursor:pointer;
+    *{ box-sizing: border-box; margin: 0; padding: 0; }
+    body{ font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 20px; }
+    
+    .no-print{ text-align: center; margin-bottom: 20px; }
+    .no-print .btn{
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 0 5px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
     }
-    .btn.secondary{ background:#6c757d; }
-
-    .badge{
-      display:inline-block;
-      padding: 1px 6px;
-      border-radius: 12px;
-      font-size: 9px;
-      font-weight:900;
-      border:1px solid #111;
+    .no-print .btn-primary{ background: #0BA896; color: #fff; }
+    .no-print .btn-secondary{ background: #64748B; color: #fff; }
+    
+    .label-container{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
     }
-    .verde{ background:#dcfce7; }
-    .amarillo{ background:#fef9c3; }
-    .rojo{ background:#fee2e2; }
-    .gris{ background:#f3f4f6; }
-
-    /* Mini carta */
-    .paper{
-      width: <?= (int)$w ?>mm;
-      height: <?= (int)$h ?>mm;
-      box-sizing:border-box;
-      border: 1px solid #111;
+    
+    .label-card{
+      width: <?= $w ?>mm;
+      min-height: <?= $h ?>mm;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .label-header{
+      background: linear-gradient(135deg, #0BA896, #077D6E);
+      color: #fff;
+      padding: 6mm 8mm 4mm;
+      display: flex;
+      align-items: center;
+      gap: 6mm;
+    }
+    
+    .label-logo{
+      width: 16mm;
+      height: 16mm;
+      border-radius: 4mm;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 8mm;
+      flex-shrink: 0;
+    }
+    
+    .label-logo img{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 4mm;
+    }
+    
+    .label-company{
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .label-company-name{
+      font-size: 6mm;
+      font-weight: 700;
+      line-height: 1.1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .label-company-nit{
+      font-size: 4mm;
+      opacity: 0.9;
+      margin-top: 1mm;
+    }
+    
+    .label-body{
+      padding: 5mm 6mm;
+      display: flex;
+      gap: 5mm;
+      flex: 1;
+    }
+    
+    .label-info{
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .label-code{
+      font-size: 7mm;
+      font-weight: 800;
+      color: #0f172a;
+      line-height: 1;
+      margin-bottom: 2mm;
+    }
+    
+    .label-name{
+      font-size: 5mm;
+      font-weight: 600;
+      color: #334155;
+      line-height: 1.2;
+      margin-bottom: 3mm;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .label-meta{
+      font-size: 3.5mm;
+      color: #64748b;
+      line-height: 1.4;
+    }
+    
+    .label-meta strong{
+      color: #475569;
+    }
+    
+    .label-badge{
+      display: inline-block;
+      padding: 1mm 3mm;
       border-radius: 3mm;
-      overflow:hidden;
-      background:#fff;
+      font-size: 3mm;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-top: 2mm;
     }
-    .head{
-      padding: 2.2mm 3.2mm;
-      border-bottom:1px solid #111;
-      background:#f8fafc;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 2mm;
+    .label-badge.verde{ background: #d1fae5; color: #047857; }
+    .label-badge.amarillo{ background: #fef3c7; color: #b45309; }
+    .label-badge.rojo{ background: #fee2e2; color: #b91c1c; }
+    .label-badge.gris{ background: #f1f5f9; color: #64748b; }
+    
+    .label-qr{
+      width: 28mm;
+      height: 28mm;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .h-left{
-      min-width:0;
+    
+    .label-qr img, .label-qr canvas{
+      width: 100% !important;
+      height: 100% !important;
     }
-    .h-title{
-      font-weight:900;
-      font-size: 10px;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      line-height:1.1;
+    
+    .label-footer{
+      background: #f8fafc;
+      padding: 3mm 6mm;
+      border-top: 1px solid #e2e8f0;
+      font-size: 3mm;
+      color: #94a3b8;
+      text-align: center;
     }
-    .h-sub{
-      font-size: 8px;
-      color:#444;
-      margin-top: .6mm;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .h-right{
-      font-size:8px;
-      text-align:right;
-      line-height:1.1;
-      color:#111;
-      white-space:nowrap;
-    }
-
-    .body{
-      padding: 3mm;
-      display:flex;
-      gap: 3mm;
-      align-items: stretch;
-    }
-    .left{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      min-width:0;
-    }
-    .asset-code{
-      font-weight:900;
-      font-size: 13px;
-      line-height:1.1;
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-    .asset-name{
-      font-size: 10px;
-      font-weight:700;
-      line-height:1.15;
-      max-height: 22mm;
-      overflow:hidden;
-    }
-    .meta{
-      font-size: 8.8px;
-      color:#333;
-      line-height:1.2;
-      margin-top: 1mm;
-    }
-
-    .qr{
-      width: 22mm;
-      height: 22mm;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border: 1px dashed #888;
-      border-radius: 2mm;
-      padding: 1.5mm;
-      box-sizing:border-box;
-      background:#fff;
-    }
-    .qr-caption{
-      text-align:center;
-      font-size: 7.5px;
-      color:#444;
-      margin-top: 1mm;
-      line-height:1.1;
-    }
-
+    
     @media print{
-      .no-print{ display:none !important; }
-      @page{ margin: 6mm; }
-      body{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .no-print{ display: none !important; }
+      body{ background: #fff; padding: 0; }
+      .label-card{ box-shadow: none; border: 1px solid #ccc; }
+      @page{ margin: 5mm; }
     }
   </style>
 </head>
 <body>
 
   <div class="no-print">
-    <a class="btn secondary" href="<?= e2(base_url()) ?>/index.php?route=activo_detalle&id=<?= (int)$activo['id'] ?>">Volver</a>
-    <button class="btn" onclick="window.print()">Imprimir / Guardar PDF</button>
+    <a class="btn btn-secondary" href="<?= e2(base_url()) ?>/index.php?route=activo_detalle&id=<?= (int)$activo['id'] ?>">← Volver</a>
+    <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
   </div>
 
-  <div class="paper">
-    <!-- membrete mini -->
-    <div class="head">
-      <div class="h-left">
-        <div class="h-title"><?= e2($empresaNombre) ?></div>
-        <div class="h-sub"><?= $empresaNit !== '' ? ('NIT: '.e2($empresaNit)) : 'GeoActivos' ?></div>
+  <div class="label-container">
+    <div class="label-card">
+      <div class="label-header">
+        <div class="label-logo">
+          <?php if(!empty($empresaLogo)): ?>
+            <img src="<?= e2($empresaLogo) ?>" alt="Logo">
+          <?php else: ?>
+            <?= substr($empresaNombre, 0, 2) ?>
+          <?php endif; ?>
+        </div>
+        <div class="label-company">
+          <div class="label-company-name"><?= e2($empresaNombre) ?></div>
+          <?php if($empresaNit): ?>
+          <div class="label-company-nit">NIT: <?= e2($empresaNit) ?></div>
+          <?php endif; ?>
+        </div>
       </div>
-      <div class="h-right">
-        <div><b>ETIQUETA QR</b></div>
-        <div><?= e2($modo==='detalle'?'Detalle':'Hoja de vida') ?></div>
-      </div>
-    </div>
-
-    <div class="body">
-      <div class="left">
-        <div>
-          <div class="asset-code"><?= e2($codigo) ?></div>
-          <div class="asset-name"><?= e2($nombre) ?></div>
-
-          <div class="meta">
-            <div><b>Tipo:</b> <?= e2($tipoTxt) ?></div>
-            <div><b>Ubicación:</b> <?= e2($ubic) ?></div>
-            <div><span class="badge <?= e2(badge_estado($estado)) ?>"><?= e2($estado ?: '—') ?></span></div>
+      
+      <div class="label-body">
+        <div class="label-info">
+          <div class="label-code"><?= e2($codigo) ?></div>
+          <div class="label-name"><?= e2($nombre) ?></div>
+          
+          <div class="label-meta">
+            <?php if($serial): ?>
+            <div><strong>Serie:</strong> <?= e2($serial) ?></div>
+            <?php endif; ?>
+            <?php if($modelo): ?>
+            <div><strong>Modelo:</strong> <?= e2($modelo) ?></div>
+            <?php endif; ?>
+            <div><strong>Ubic:</strong> <?= e2($ubic) ?></div>
+            <span class="label-badge <?= badge_estado($estado) ?>"><?= e2($estado) ?></span>
           </div>
         </div>
-
-        <div class="meta">
-          ID: <?= (int)$activo['id'] ?> · GeoActivos
-        </div>
+        
+        <div class="label-qr" id="qrcode-<?= $id ?>"></div>
       </div>
-
-      <div>
-        <div class="qr" id="qrcode"></div>
-        <div class="qr-caption">
-          Escanea para ver<br><?= ($modo==='detalle'?'Detalle':'Hoja de vida') ?>
-        </div>
+      
+      <div class="label-footer">
+        Escanea para ver <?= $modo==='detalle' ? 'detalle' : 'hoja de vida' ?> · GeoActivos
       </div>
     </div>
   </div>
 
-  <script>document.getElementById('qrcode').dataset.qrText = <?= json_encode($dest) ?>;</script>
-  <script src="<?= e(base_url()) ?>/assets/js/activo-qr.js"></script>
+  <script>
+    new QRCode(document.getElementById("qrcode-<?= $id ?>"), {
+      text: "<?= e2($dest) ?>",
+      width: 128,
+      height: 128,
+      colorDark : "#000000",
+      colorLight : "#ffffff",
+      correctLevel : QRCode.CorrectLevel.M
+    });
+  </script>
 
 </body>
 </html>

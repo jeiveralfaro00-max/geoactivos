@@ -6,7 +6,7 @@ return [
 
   'db' => [
     'host' => 'localhost',
-    'name' => 'geoactivos_clean',
+    'name' => 'geoactivos',
     'user' => 'root',
     'pass' => '',
     'charset' => 'utf8mb4',

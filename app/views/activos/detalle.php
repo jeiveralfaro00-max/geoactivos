@@ -315,18 +315,24 @@ require __DIR__ . '/../layout/sidebar.php';
               <?= e($activo['estado']) ?>
             </span>
           </h3>
-          <div class="text-muted">
-            <?= e($activo['nombre'] ?: '—') ?>
-            <span class="mx-1">·</span>
-            <?= e($tipoTxt) ?>
-          </div>
-
-          <div class="mt-2 text-sm text-muted">
-            <i class="fas fa-map-marker-alt"></i> <?= e($ubic) ?>
-            <span class="mx-2">|</span>
-            <i class="fas fa-hashtag"></i> Serial: <?= e($activo['serial'] ?: '—') ?>
-            <span class="mx-2">|</span>
-            <i class="fas fa-industry"></i> Marca: <?= e($activo['marca'] ?: '—') ?>
+          <div class="d-flex align-items-center gap-3 mt-2">
+            <?php if (!empty($activo['foto'])): ?>
+            <img src="<?= e($activo['foto']) ?>" alt="Foto" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid var(--slate-200);">
+            <?php endif; ?>
+            <div>
+              <div class="text-muted">
+                <?= e($activo['nombre'] ?: '—') ?>
+                <span class="mx-1">·</span>
+                <?= e($tipoTxt) ?>
+              </div>
+              <div class="mt-1 text-sm text-muted">
+                <i class="fas fa-map-marker-alt"></i> <?= e($ubic) ?>
+                <span class="mx-2">|</span>
+                <i class="fas fa-hashtag"></i> Serial: <?= e($activo['serial'] ?: '—') ?>
+                <span class="mx-2">|</span>
+                <i class="fas fa-industry"></i> Marca: <?= e($activo['marca'] ?: '—') ?>
+              </div>
+            </div>
           </div>
         </div>
       </div>

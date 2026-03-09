@@ -11,39 +11,44 @@
     const toggleBtn = document.querySelector('.toggle-sidebar-btn');
     const body = document.body;
 
-    if (!sidebar || !backdrop || !toggleBtn) return;
+    if (!sidebar || !backdrop || !toggleBtn) {
+      console.warn('Sidebar elements not found');
+      return;
+    }
 
     // Función para abrir/cerrar sidebar
     function toggleSidebar() {
-      body.classList.toggle('sidebar-collapse');
-      sidebar.classList.toggle('show');
-      backdrop.classList.toggle('show');
-
-      // Guardar estado y manejar overflow
-      const isOpen = body.classList.contains('sidebar-collapse');
-      if (isOpen) {
+      const isClosed = !body.classList.contains('sidebar-collapse');
+      
+      if (isClosed) {
+        body.classList.add('sidebar-collapse');
+        sidebar.classList.add('show');
+        backdrop.classList.add('show');
         body.style.overflow = 'hidden';
       } else {
+        body.classList.remove('sidebar-collapse');
+        sidebar.classList.remove('show');
+        backdrop.classList.remove('show');
         body.style.overflow = '';
       }
-      localStorage.setItem('sidebar_open', isOpen ? 'true' : 'false');
+      
+      localStorage.setItem('sidebar_open', isClosed ? 'true' : 'false');
     }
 
     // Click en hamburguesa
     toggleBtn.addEventListener('click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       toggleSidebar();
     });
 
     // Click en backdrop para cerrar
     backdrop.addEventListener('click', function() {
-      if (body.classList.contains('sidebar-collapse')) {
-        body.classList.remove('sidebar-collapse');
-        sidebar.classList.remove('show');
-        backdrop.classList.remove('show');
-        body.style.overflow = '';  // Restaurar scroll
-        localStorage.setItem('sidebar_open', 'false');
-      }
+      body.classList.remove('sidebar-collapse');
+      sidebar.classList.remove('show');
+      backdrop.classList.remove('show');
+      body.style.overflow = '';
+      localStorage.setItem('sidebar_open', 'false');
     });
 
     // Click en links del sidebar para cerrar en mobile
@@ -54,7 +59,7 @@
           body.classList.remove('sidebar-collapse');
           sidebar.classList.remove('show');
           backdrop.classList.remove('show');
-          body.style.overflow = '';  // Restaurar scroll
+          body.style.overflow = '';
           localStorage.setItem('sidebar_open', 'false');
         }
       });
@@ -66,7 +71,7 @@
       body.classList.add('sidebar-collapse');
       sidebar.classList.add('show');
       backdrop.classList.add('show');
-      body.style.overflow = 'hidden';  // Bloquear scroll si estaba abierto
+      body.style.overflow = 'hidden';
     }
 
     // Cerrar sidebar en resize a mobile
@@ -75,7 +80,7 @@
         body.classList.remove('sidebar-collapse');
         sidebar.classList.remove('show');
         backdrop.classList.remove('show');
-        body.style.overflow = '';  // Restaurar scroll
+        body.style.overflow = '';
       }
     });
 
@@ -85,7 +90,7 @@
         body.classList.remove('sidebar-collapse');
         sidebar.classList.remove('show');
         backdrop.classList.remove('show');
-        body.style.overflow = '';  // Restaurar scroll
+        body.style.overflow = '';
         localStorage.setItem('sidebar_open', 'false');
       }
     });

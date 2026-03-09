@@ -52,21 +52,19 @@ function table_columns($table) {
 $cols = table_columns('tenants');
 $has = function($c) use ($cols){ return in_array($c, $cols, true); };
 
-$id = (int)($_GET['id'] ?? 0);
+$col_nombre      = $has('nombre') ? 'nombre' : null;
+$col_nit         = $has('nit') ? 'nit' : null;
+$col_email       = $has('email') ? 'email' : null;
+$col_telefono    = $has('telefono') ? 'telefono' : null;
+$col_direccion   = $has('direccion') ? 'direccion' : null;
+$col_ciudad      = $has('ciudad') ? 'ciudad' : null;
+$col_departamento = $has('departamento') ? 'departamento' : null;
+$col_representante = $has('representante') ? 'representante' : null;
+$col_logo        = $has('logo') ? 'logo' : null;
+$col_estado      = $has('estado') ? 'estado' : null;
 
-// Si NO es superadmin: solo puede editar su propio tenant y NO puede crear
-if (!$isSuper) {
-  if ($id === 0) {
-    http_response_code(403);
-    echo "No autorizado.";
-    exit;
-  }
-  if ($id !== (int)$tenantId) {
-    http_response_code(403);
-    echo "No autorizado.";
-    exit;
-  }
-}
+$id = (int)($_GET['id'] ?? 0);
+$error = '';
 
 $data = [
   'nombre' => '',
@@ -75,18 +73,11 @@ $data = [
   'telefono' => '',
   'direccion' => '',
   'ciudad' => '',
+  'departamento' => '',
+  'representante' => '',
+  'logo' => '',
   'estado' => 'ACTIVO'
 ];
-
-$error = '';
-
-$col_nombre    = $has('nombre') ? 'nombre' : null;
-$col_nit       = $has('nit') ? 'nit' : null;
-$col_email     = $has('email') ? 'email' : null;
-$col_telefono  = $has('telefono') ? 'telefono' : null;
-$col_direccion = $has('direccion') ? 'direccion' : null;
-$col_ciudad    = $has('ciudad') ? 'ciudad' : null;
-$col_estado    = $has('estado') ? 'estado' : null;
 
 if ($id > 0) {
   $select = [
@@ -97,6 +88,9 @@ if ($id > 0) {
     ($col_telefono ? "$col_telefono AS telefono" : "NULL AS telefono"),
     ($col_direccion ? "$col_direccion AS direccion" : "NULL AS direccion"),
     ($col_ciudad ? "$col_ciudad AS ciudad" : "NULL AS ciudad"),
+    ($col_departamento ? "$col_departamento AS departamento" : "NULL AS departamento"),
+    ($col_representante ? "$col_representante AS representante" : "NULL AS representante"),
+    ($col_logo ? "$col_logo AS logo" : "NULL AS logo"),
     ($col_estado ? "$col_estado AS estado" : "NULL AS estado"),
   ];
 
@@ -110,13 +104,16 @@ if ($id > 0) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-  $nombre   = trim((string)($_POST['nombre'] ?? ''));
-  $nit      = trim((string)($_POST['nit'] ?? ''));
-  $email    = trim((string)($_POST['email'] ?? ''));
-  $telefono = trim((string)($_POST['telefono'] ?? ''));
-  $direccion= trim((string)($_POST['direccion'] ?? ''));
-  $ciudad   = trim((string)($_POST['ciudad'] ?? ''));
-  $estado   = trim((string)($_POST['estado'] ?? 'ACTIVO'));
+  $nombre      = trim((string)($_POST['nombre'] ?? ''));
+  $nit         = trim((string)($_POST['nit'] ?? ''));
+  $email       = trim((string)($_POST['email'] ?? ''));
+  $telefono    = trim((string)($_POST['telefono'] ?? ''));
+  $direccion   = trim((string)($_POST['direccion'] ?? ''));
+  $ciudad      = trim((string)($_POST['ciudad'] ?? ''));
+  $departamento = trim((string)($_POST['departamento'] ?? ''));
+  $representante = trim((string)($_POST['representante'] ?? ''));
+  $logo        = trim((string)($_POST['logo'] ?? ''));
+  $estado      = trim((string)($_POST['estado'] ?? 'ACTIVO'));
 
   if ($col_nombre && $nombre === '') $error = 'El nombre de la empresa es obligatorio.';
   if ($col_estado && !in_array($estado, ['ACTIVO','INACTIVO'], true)) $estado = 'ACTIVO';
@@ -126,13 +123,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fields = [];
     $params = [];
 
-    if ($col_nombre)    { $fields['nombre'] = $nombre; }
-    if ($col_nit)       { $fields['nit'] = ($nit !== '' ? $nit : null); }
-    if ($col_email)     { $fields['email'] = ($email !== '' ? $email : null); }
-    if ($col_telefono)  { $fields['telefono'] = ($telefono !== '' ? $telefono : null); }
-    if ($col_direccion) { $fields['direccion'] = ($direccion !== '' ? $direccion : null); }
-    if ($col_ciudad)    { $fields['ciudad'] = ($ciudad !== '' ? $ciudad : null); }
-    if ($col_estado)    { $fields['estado'] = $estado; }
+    if ($col_nombre)      { $fields['nombre'] = $nombre; }
+    if ($col_nit)         { $fields['nit'] = ($nit !== '' ? $nit : null); }
+    if ($col_email)       { $fields['email'] = ($email !== '' ? $email : null); }
+    if ($col_telefono)    { $fields['telefono'] = ($telefono !== '' ? $telefono : null); }
+    if ($col_direccion)   { $fields['direccion'] = ($direccion !== '' ? $direccion : null); }
+    if ($col_ciudad)      { $fields['ciudad'] = ($ciudad !== '' ? $ciudad : null); }
+    if ($col_departamento) { $fields['departamento'] = ($departamento !== '' ? $departamento : null); }
+    if ($col_representante) { $fields['representante'] = ($representante !== '' ? $representante : null); }
+    
+    // Handle logo upload
+    if ($col_logo) {
+        $logoUrl = trim((string)($_POST['logo'] ?? ''));
+        if (!empty($_FILES['logo_file']['tmp_name']) && $_FILES['logo_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadDir = __DIR__ . '/../../public/uploads/logos/';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+            $ext = pathinfo($_FILES['logo_file']['name'], PATHINFO_EXTENSION);
+            $filename = 'logo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+            $targetPath = $uploadDir . $filename;
+            if (move_uploaded_file($_FILES['logo_file']['tmp_name'], $targetPath)) {
+                $logoUrl = base_url() . '/uploads/logos/' . $filename;
+            }
+        }
+        if ($logoUrl !== '') {
+            $fields['logo'] = $logoUrl;
+        }
+    }
+    
+    if ($col_estado)      { $fields['estado'] = $estado; }
 
     if ($id > 0) {
 
@@ -175,6 +195,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     'telefono'=>$telefono,
     'direccion'=>$direccion,
     'ciudad'=>$ciudad,
+    'departamento'=>$departamento,
+    'representante'=>$representante,
+    'logo'=>$logo,
     'estado'=>$estado
   ];
 }
@@ -204,7 +227,7 @@ require __DIR__ . '/../layout/sidebar.php';
       </div>
     <?php endif; ?>
 
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <div class="form-row">
 
         <?php if ($col_nombre): ?>
@@ -244,16 +267,52 @@ require __DIR__ . '/../layout/sidebar.php';
       <div class="form-row">
 
         <?php if ($col_direccion): ?>
-        <div class="form-group col-md-8">
+        <div class="form-group col-md-6">
           <label>Dirección</label>
           <input class="form-control" name="direccion" value="<?= e($data['direccion'] ?? '') ?>">
         </div>
         <?php endif; ?>
 
         <?php if ($col_ciudad): ?>
-        <div class="form-group col-md-4">
+        <div class="form-group col-md-3">
           <label>Ciudad</label>
           <input class="form-control" name="ciudad" value="<?= e($data['ciudad'] ?? '') ?>">
+        </div>
+        <?php endif; ?>
+
+        <?php if ($col_departamento): ?>
+        <div class="form-group col-md-3">
+          <label>Departamento</label>
+          <input class="form-control" name="departamento" value="<?= e($data['departamento'] ?? '') ?>">
+        </div>
+        <?php endif; ?>
+
+      </div>
+
+      <div class="form-row">
+
+        <?php if ($col_representante): ?>
+        <div class="form-group col-md-6">
+          <label>Representante Legal</label>
+          <input class="form-control" name="representante" value="<?= e($data['representante'] ?? '') ?>">
+        </div>
+        <?php endif; ?>
+
+        <?php if ($col_logo): ?>
+        <div class="form-group col-md-6">
+          <label>Logo de la Empresa</label>
+          <?php if (!empty($data['logo'])): ?>
+          <div class="mb-2">
+            <img src="<?= e($data['logo']) ?>" alt="Logo" style="max-width:120px;max-height:80px;border-radius:8px;border:1px solid var(--slate-200);">
+            <div style="font-size:.7rem;color:var(--slate-500);margin-top:4px;">Actual</div>
+          </div>
+          <?php endif; ?>
+          <div class="custom-file">
+            <input type="file" class="custom-file-input" id="logoFile" name="logo_file" accept="image/*">
+            <label class="custom-file-label" for="logoFile">Seleccionar imagen...</label>
+          </div>
+          <input type="text" class="form-control mt-2" name="logo" value="<?= e($data['logo'] ?? '') ?>" placeholder="O ingresa URL del logo">
+          <small class="form-text text-muted">Sube una imagen o ingresa una URL</small>
         </div>
         <?php endif; ?>
 

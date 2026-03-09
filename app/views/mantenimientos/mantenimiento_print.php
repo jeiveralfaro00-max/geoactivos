@@ -397,26 +397,28 @@ elseif ($estado === 'CANCELADO') $estadoCss = 'st bad';
 
   <style>
     :root{
-      --ink:#111; --muted:#555; --line:#1a1a1a; --soft:#f2f4f7; --soft2:#eef1f5; --accent:#0d6efd;
+      --ink:#111; --muted:#555; --line:#1a1a1a; --soft:#f2f4f7; --soft2:#eef1f5; --accent:#0BA896;
+      --teal:#0BA896; --teal-dark:#077D6E; --teal-light:#E6F7F5;
       --ok:#198754; --warn:#f59f00; --bad:#dc3545;
     }
     *{ box-sizing:border-box; }
-    body{ margin:0; font-family: Arial, Helvetica, sans-serif; color:var(--ink); background:#fff; }
-    .no-print{ padding:10px 12mm; text-align:right; background:#f7f7f7; border-bottom:1px solid #eee; }
-    .btn{ display:inline-block; padding:8px 12px; border-radius:10px; background:var(--accent); color:#fff; text-decoration:none; font-size:13px; border:0; cursor:pointer; }
+    body{ margin:0; font-family: 'Segoe UI', Arial, Helvetica, sans-serif; color:var(--ink); background:#fff; }
+    .no-print{ padding:10px 12mm; text-align:right; background:linear-gradient(135deg, var(--teal-light), #fff); border-bottom:2px solid var(--teal); }
+    .btn{ display:inline-block; padding:10px 18px; border-radius:10px; background:var(--teal); color:#fff; text-decoration:none; font-size:13px; border:0; cursor:pointer; font-weight:600; }
+    .btn:hover{ background:var(--teal-dark); }
     .btn.secondary{ background:#6c757d; }
     .page{ width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm; }
 
-    .hero{ border:2px solid var(--line); border-radius:14px; overflow:hidden; }
+    .hero{ border:2px solid var(--teal); border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(11,168,150,0.15); }
     .hero-top{
       display:flex; justify-content:space-between; gap:12px;
-      padding:12px;
-      background:linear-gradient(90deg, #0d6efd 0%, #0b5ed7 40%, #0a58ca 100%);
+      padding:16px 20px;
+      background:linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
       color:#fff;
     }
-    .brand{ display:flex; gap:10px; align-items:center; min-width:0; flex:1; }
+    .brand{ display:flex; gap:12px; align-items:center; min-width:0; flex:1; }
     .logo{
-      width:44px;height:44px;border-radius:12px;
+      width:54px;height:54px;border-radius:12px;
       background:rgba(255,255,255,.18);
       display:flex;align-items:center;justify-content:center;
       overflow:hidden;

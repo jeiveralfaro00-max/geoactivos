@@ -269,123 +269,287 @@ require __DIR__ . '/../layout/sidebar.php';
   font-size:.9rem;
   color:#495057;
   margin-bottom:.5rem;
+ }
+
+.mant-hero {
+    background: linear-gradient(135deg, var(--teal-light), #fff);
+    border: 1px solid var(--teal-mid);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
 }
-</style>
+.mant-hero::before {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(11,168,150,0.1), transparent 70%);
+    border-radius: 50%;
+}
+.mant-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.mant-badge.programado { background: #ECFEFF; color: #0891B2; border: 1px solid #A5F3FC; }
+.mant-badge.en_proceso { background: #FFFBEB; color: #C07A00; border: 1px solid #FDE68A; }
+.mant-badge.cerrado { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+.mant-badge.anulado { background: #FFF0F2; color: #C81E3A; border: 1px solid #FECDD3; }
 
-<div class="card card-outline card-warning">
-  <div class="card-header">
-    <div class="d-flex align-items-center justify-content-between flex-wrap">
-      <div>
-        <h3 class="card-title mb-0">
-          <i class="fas fa-tools"></i> Mantenimiento #<?= (int)$m['id'] ?>
-        </h3>
-        <div class="text-muted text-sm mt-1">
-          <?= e($m['codigo_interno']) ?> · <?= e($m['activo_nombre']) ?>
-        </div>
-      </div>
+.mant-card {
+    background: var(--white);
+    border: 1px solid var(--slate-100);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 16px;
+}
+.mant-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--slate-50);
+    background: var(--slate-50);
+}
+.mant-card-title {
+    font-family: 'Sora', sans-serif;
+    font-size: .95rem;
+    font-weight: 700;
+    color: var(--slate-900);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.mant-card-title i { color: var(--teal); }
+.mant-card-body { padding: 16px 18px; }
 
-      <div class="mt-2 mt-md-0">
-        <span class="badge badge-<?= badge_estado_mant($m['estado']) ?> mr-1"><?= e($m['estado']) ?></span>
-        <span class="badge badge-<?= badge_tipo($m['tipo']) ?> mr-1"><?= e($m['tipo']) ?></span>
-        <span class="badge badge-<?= badge_prio($m['prioridad']) ?> mr-2"><?= e($m['prioridad']) ?></span>
+.info-row {
+    display: flex;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--slate-50);
+}
+.info-row:last-child { border-bottom: none; }
+.info-label {
+    width: 140px;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--slate-400);
+    flex-shrink: 0;
+}
+.info-value {
+    flex: 1;
+    font-size: .9rem;
+    color: var(--slate-800);
+}
 
-        <a class="btn btn-sm btn-secondary" href="<?= e($backUrl) ?>">
-          <i class="fas fa-arrow-left"></i> Volver
-        </a>
-        <a class="btn btn-sm btn-primary" href="<?= e($editUrl) ?>">
-          <i class="fas fa-edit"></i> Editar
-        </a>
+.mant-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: .8rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all .22s;
+}
+.mant-btn-primary {
+    background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    color: #fff;
+}
+.mant-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(11,168,150,0.3);
+    color: #fff;
+}
+.mant-btn-secondary {
+    background: var(--slate-100);
+    color: var(--slate-600);
+    border: 1px solid var(--slate-200);
+}
+.mant-btn-secondary:hover {
+    background: var(--teal-light);
+    color: var(--teal-dark);
+    border-color: var(--teal-mid);
+}
+ </style>
 
-<?php
-$printUrl = e(base_url()) . '/index.php?route=mantenimiento_print&id='.(int)$m['id'];
-?>
-<a class="btn btn-sm btn-outline-dark" target="_blank" href="<?= e($printUrl) ?>">
-  <i class="fas fa-print"></i> Imprimir
-</a>
-
-
-        <a class="btn btn-sm btn-outline-info" href="<?= e($activoUrl) ?>">
-          <i class="fas fa-cube"></i> Hoja de vida
-        </a>
-
-        <!-- ✅ NUEVO: Auditoría del mantenimiento -->
-        <a class="btn btn-sm btn-outline-secondary" href="<?= e($auditUrl) ?>">
-          <i class="fas fa-stream"></i> Auditoría
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <div class="card-body">
-
-    <!-- HERO + KPIs -->
-    <div class="row">
-      <div class="col-lg-6 mb-3">
-        <div class="hero-mant">
-          <div class="d-flex align-items-center">
-            <div class="mr-3" style="font-size:28px;opacity:.75">
-              <i class="fas fa-laptop-medical"></i>
+<div class="mant-hero" style="position:relative;">
+    <div class="d-flex align-items-start justify-content-between flex-wrap" style="gap:16px;">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <span class="mant-badge <?= strtolower(str_replace('_', '', $m['estado'] ?? '')) ?>"><?= e($m['estado']) ?></span>
+                <span class="mant-badge" style="background:var(--slate-100);color:var(--slate-600);"><?= e($m['tipo']) ?></span>
+                <span class="mant-badge" style="background:#FFF0F2;color:#C81E3A;"><?= e($m['prioridad']) ?></span>
             </div>
-            <div style="min-width:0">
-              <div class="title">
+            <h2 style="font-family:'Sora',sans-serif;font-size:1.5rem;font-weight:700;color:var(--slate-900);margin:0;">
+                <i class="fas fa-tools" style="color:var(--teal);"></i> Mantenimiento #<?= (int)$m['id'] ?>
+            </h2>
+            <div style="font-size:.9rem;color:var(--slate-500);margin-top:4px;">
                 <?= e($m['codigo_interno']) ?> · <?= e($m['activo_nombre']) ?>
-              </div>
-              <div class="meta">
-                Categoría: <b><?= e($m['categoria']) ?></b> · Tipo: <b><?= e($tipoTxt) ?></b><br>
-                Ubicación: <b><?= e($ubic) ?></b>
-              </div>
             </div>
-          </div>
         </div>
-      </div>
+        <div class="d-flex flex-wrap" style="gap:8px;">
+            <a class="mant-action-btn mant-btn-secondary" href="<?= e($backUrl) ?>">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+            <a class="mant-action-btn mant-btn-secondary" href="<?= e($editUrl) ?>">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a class="mant-action-btn mant-btn-secondary" target="_blank" href="<?= e($printUrl) ?>">
+                <i class="fas fa-print"></i> Imprimir
+            </a>
+            <a class="mant-action-btn mant-btn-secondary" href="<?= e($activoUrl) ?>">
+                <i class="fas fa-cube"></i> Hoja de vida
+            </a>
+            <a class="mant-action-btn mant-btn-secondary" href="<?= e($auditUrl) ?>">
+                <i class="fas fa-stream"></i> Auditoría
+            </a>
+        </div>
+    </div>
+</div>
 
-      <div class="col-lg-6 mb-3">
-        <div class="row">
-          <div class="col-md-4 mb-2">
-            <div class="kpi-mini">
-              <div class="label"><i class="fas fa-dollar-sign text-muted mr-1"></i> Total</div>
-              <div class="value">$ <?= number_format($costoTotal, 0, ',', '.') ?></div>
-              <div class="sub">MO + Repuestos</div>
+<div class="row">
+    <div class="col-lg-4 mb-3">
+        <div class="mant-card">
+            <div class="mant-card-header">
+                <div class="mant-card-title"><i class="fas fa-box"></i> Equipo</div>
             </div>
-          </div>
-          <div class="col-md-4 mb-2">
-            <div class="kpi-mini">
-              <div class="label"><i class="fas fa-paperclip text-muted mr-1"></i> Adjuntos</div>
-              <div class="value"><?= (int)$totalAdjuntos ?></div>
-              <div class="sub"><?= $adjEnabled ? 'Disponibles' : 'No habilitado' ?></div>
+            <div class="mant-card-body">
+                <div class="info-row">
+                    <div class="info-label">Código</div>
+                    <div class="info-value"><?= e($m['codigo_interno']) ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Nombre</div>
+                    <div class="info-value"><?= e($m['activo_nombre']) ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Modelo</div>
+                    <div class="info-value"><?= e($m['modelo'] ?: '—') ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Serial</div>
+                    <div class="info-value"><?= e($m['serial'] ?: '—') ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Ubicación</div>
+                    <div class="info-value"><?= e($ubic) ?></div>
+                </div>
             </div>
-          </div>
-          <div class="col-md-4 mb-2">
-            <div class="kpi-mini">
-              <div class="label"><i class="fas fa-calendar-alt text-muted mr-1"></i> Programado</div>
-              <div class="value" style="font-size:1.05rem;font-weight:900"><?= e($m['fecha_programada'] ? substr((string)$m['fecha_programada'],0,10) : '—') ?></div>
-              <div class="sub">Planificación</div>
-            </div>
-          </div>
         </div>
-      </div>
     </div>
 
-    <!-- TABS -->
-    <ul class="nav nav-tabs" role="tablist">
-      <li class="nav-item">
-        <a class="nav-link active" data-toggle="tab" href="#resumen" role="tab">
-          <i class="fas fa-info-circle"></i> Resumen
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#fallas" role="tab">
-          <i class="fas fa-bug"></i> Falla / Diagnóstico
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#actividades" role="tab">
-          <i class="fas fa-clipboard-list"></i> Actividades
-        </a>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" data-toggle="tab" href="#costos" role="tab">
-          <i class="fas fa-dollar-sign"></i> Costos
+    <div class="col-lg-4 mb-3">
+        <div class="mant-card">
+            <div class="mant-card-header">
+                <div class="mant-card-title"><i class="fas fa-calendar"></i> Fechas</div>
+            </div>
+            <div class="mant-card-body">
+                <div class="info-row">
+                    <div class="info-label">Programada</div>
+                    <div class="info-value"><?= fmt_dt($m['fecha_programada'], 10) ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Inicio</div>
+                    <div class="info-value"><?= fmt_dt($m['fecha_inicio'], 16) ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Cierre</div>
+                    <div class="info-value"><?= fmt_dt($m['fecha_fin'], 16) ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Creado</div>
+                    <div class="info-value"><?= fmt_dt($m['creado_en'], 16) ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mb-3">
+        <div class="mant-card">
+            <div class="mant-card-header">
+                <div class="mant-card-title"><i class="fas fa-dollar-sign"></i> Costos</div>
+            </div>
+            <div class="mant-card-body">
+                <div class="info-row">
+                    <div class="info-label">Mano de obra</div>
+                    <div class="info-value">$ <?= number_format((float)$m['costo_mano_obra'], 0, ',', '.') ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Repuestos</div>
+                    <div class="info-value">$ <?= number_format((float)$m['costo_repuestos'], 0, ',', '.') ?></div>
+                </div>
+                <div class="info-row" style="background:var(--teal-light);margin:10px -18px -18px;padding:14px 18px;border-radius:0 0 14px 14px;">
+                    <div class="info-label" style="color:var(--teal-dark);">Total</div>
+                    <div class="info-value" style="font-weight:700;color:var(--teal-dark);font-size:1.1rem;">$ <?= number_format($costoTotal, 0, ',', '.') ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mant-card">
+    <div class="mant-card-header">
+        <div class="mant-card-title"><i class="fas fa-clipboard-list"></i> Detalles del Mantenimiento</div>
+    </div>
+    <div class="mant-card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="info-row">
+                    <div class="info-label">Falla Reportada</div>
+                    <div class="info-value"><?= e($m['falla_reportada'] ?: '—') ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Diagnóstico</div>
+                    <div class="info-value"><?= e($m['diagnostico'] ?: '—') ?></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="info-row">
+                    <div class="info-label">Actividades</div>
+                    <div class="info-value"><?= e($m['actividades'] ?: '—') ?></div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">Recomendaciones</div>
+                    <div class="info-value"><?= e($m['recomendaciones'] ?: '—') ?></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- TABS -->
+<ul class="nav nav-tabs" role="tablist" style="margin-top:20px;">
+  <li class="nav-item">
+    <a class="nav-link active" data-toggle="tab" href="#resumen" role="tab">
+      <i class="fas fa-info-circle"></i> Resumen
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#fallas" role="tab">
+      <i class="fas fa-bug"></i> Falla / Diagnóstico
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#actividades" role="tab">
+      <i class="fas fa-clipboard-list"></i> Actividades
+    </a>
+  </li>
+  <li class="nav-item">
+    <a class="nav-link" data-toggle="tab" href="#costos" role="tab">
+      <i class="fas fa-dollar-sign"></i> Costos
         </a>
       </li>
 

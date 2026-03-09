@@ -11,7 +11,7 @@ require_once __DIR__ . '/../app/core/Helpers.php';
 require_once __DIR__ . '/../app/core/Auth.php';
 
 /* ===================== ROUTE ===================== */
-$route = $_GET['route'] ?? 'dashboard';
+$route = $_GET['route'] ?? 'splash';
 
 /* ===================== RUTAS PÚBLICAS (NO LOGIN) =====================
    - login / logout: autenticación
@@ -42,6 +42,13 @@ if ($route === 'logout') {
   redirect('index.php?route=splash');
 }
 
+if ($route === 'set_lang') {
+  $lang = $_GET['lang'] ?? 'es';
+  $_SESSION['lang'] = $lang === 'en' ? 'en' : 'es';
+  $back = $_GET['back'] ?? 'inicio';
+  redirect('index.php?route=' . $back);
+}
+
 /* ===================== PROTECCIÓN GLOBAL =====================
    Solo pedimos login si NO es ruta pública.
 =================================================== */
@@ -52,11 +59,91 @@ if (!in_array($route, $publicRoutes, true)) {
 /* ===================== ROUTER ===================== */
 switch ($route) {
 
-  /* ─────────────────── DASHBOARD ─────────────────── */
+  /* ─────────────────── INICIO / DASHBOARD ─────────────────── */
+  case 'inicio':
   case 'dashboard':
     Auth::requirePerm('dashboard.view');
-    require __DIR__ . '/../app/views/dashboard/index.php';
+    require __DIR__ . '/../app/views/inicio/index.php';
     break;
+
+  /* ─────────────────── EMPRESAS ─────────────────── */
+  case 'empresa_ver':
+    Auth::requirePerm('empresas.view');
+    require __DIR__ . '/../app/views/empresas/detalle.php';
+    break;
+
+  /* ─────────────────── CALENDARIO ─────────────────── */
+  case 'calendario':
+    Auth::requirePerm('mantenimientos.view');
+    require __DIR__ . '/../app/views/calendario/index.php';
+    break;
+
+  /* ─────────────────── AJAX: DASHBOARD STATS ─────────────────── */
+  case 'ajax_dashboard_stats':
+    header('Content-Type: application/json');
+    $tid = Auth::tenantId();
+    $st = db()->prepare("SELECT COUNT(*) c FROM activos WHERE tenant_id=:t");
+    $st->execute([':t'=>$tid]);
+    $activos = (int)($st->fetch()['c'] ?? 0);
+    $st = db()->prepare("SELECT COUNT(*) c FROM mantenimientos WHERE tenant_id=:t AND estado IN ('PROGRAMADO','EN_PROCESO')");
+    $st->execute([':t'=>$tid]);
+    $pendientes = (int)($st->fetch()['c'] ?? 0);
+    echo json_encode(['activos'=>$activos,'pendientes'=>$pendientes]);
+    exit;
+
+  case 'ajax_mantenimientos_calendario':
+    header('Content-Type: application/json');
+    $tid = Auth::tenantId();
+    $isSuper = Auth::isSuperadmin();
+    $filter = $_GET['filter'] ?? 'all';
+    
+    $sql = "SELECT m.id, m.tipo, m.estado, m.prioridad, m.fecha_programada, m.fecha_inicio, m.fecha_fin, m.falla_reportada, a.nombre as activo_nombre
+            FROM mantenimientos m
+            LEFT JOIN activos a ON a.id = m.activo_id
+            WHERE 1=1";
+    
+    if (!$isSuper) {
+        $sql .= " AND m.tenant_id = :tid";
+    }
+    
+    if ($filter !== 'all') {
+        $sql .= " AND m.estado = :filter";
+    }
+    
+    $sql .= " ORDER BY m.fecha_programada ASC LIMIT 200";
+    
+    $st = db()->prepare($sql);
+    $params = [];
+    if (!$isSuper) {
+        $params[':tid'] = $tid;
+    }
+    if ($filter !== 'all') {
+        $params[':filter'] = $filter;
+    }
+    $st->execute($params);
+    $mants = $st->fetchAll();
+    
+    $events = [];
+    foreach ($mants as $m) {
+        $title = '#' . $m['id'] . ' - ' . ($m['activo_nombre'] ?: 'Sin equipo');
+        $events[] = [
+            'id' => $m['id'],
+            'title' => $title,
+            'start' => $m['fecha_programada'],
+            'end' => $m['fecha_fin'],
+            'estado' => $m['estado'] ?? 'PENDIENTE',
+            'tipo' => $m['tipo'],
+            'prioridad' => $m['prioridad'],
+            'fecha_programada' => $m['fecha_programada'],
+            'fecha_inicio' => $m['fecha_inicio'],
+            'fecha_fin' => $m['fecha_fin'],
+            'falla_reportada' => $m['falla_reportada'],
+            'equipo_nombre' => $m['activo_nombre']
+        ];
+    }
+    
+    echo json_encode($events);
+    exit;
 
   /* ─────────────────── ACTIVOS ─────────────────── */
   case 'activos':
@@ -67,6 +154,16 @@ switch ($route) {
   case 'activos_form':
     Auth::requirePerm('activos.edit');
     require __DIR__ . '/../app/views/activos/form.php';
+    break;
+
+  case 'importar_activos':
+    Auth::requirePerm('activos.edit');
+    require __DIR__ . '/../app/views/activos/importar.php';
+    break;
+
+  case 'descargar_plantilla_activos':
+    Auth::requirePerm('activos.view');
+    require __DIR__ . '/../app/views/activos/plantilla.php';
     break;
 
   case 'activo_detalle':
@@ -159,7 +256,7 @@ switch ($route) {
 
   case 'mantenimiento_ver':
     Auth::requirePerm('mantenimientos.view');
-    require __DIR__ . '/../app/views/mantenimientos/ver.php';
+    require __DIR__ . '/../app/views/mantenimientos/detalle.php';
     break;
 
   case 'mantenimiento_log_add':

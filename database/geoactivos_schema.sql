@@ -16,7 +16,10 @@ CREATE TABLE IF NOT EXISTS tenants (
   telefono VARCHAR(40) DEFAULT NULL,
   direccion VARCHAR(180) DEFAULT NULL,
   ciudad VARCHAR(100) DEFAULT NULL,
-  estado ENUM('ACTIVO','SUSPENDIDO') NOT NULL DEFAULT 'ACTIVO',
+  departamento VARCHAR(100) DEFAULT NULL,
+  representante VARCHAR(150) DEFAULT NULL,
+  logo VARCHAR(255) DEFAULT NULL,
+  estado ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO',
   creado_en DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -61,10 +64,12 @@ CREATE TABLE IF NOT EXISTS areas (
   id INT AUTO_INCREMENT PRIMARY KEY,
   tenant_id INT NOT NULL,
   sede_id INT DEFAULT NULL,
+  area_parent_id INT DEFAULT NULL,
   nombre VARCHAR(120) NOT NULL,
   UNIQUE KEY uk_area (tenant_id, nombre),
   CONSTRAINT fk_areas_tenant FOREIGN KEY (tenant_id) REFERENCES tenants(id),
-  CONSTRAINT fk_areas_sede FOREIGN KEY (sede_id) REFERENCES sedes(id)
+  CONSTRAINT fk_areas_sede FOREIGN KEY (sede_id) REFERENCES sedes(id),
+  CONSTRAINT fk_areas_parent FOREIGN KEY (area_parent_id) REFERENCES areas(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS categorias_activo (
@@ -110,6 +115,7 @@ CREATE TABLE IF NOT EXISTS activos (
   modelo VARCHAR(120) DEFAULT NULL,
   serial VARCHAR(120) DEFAULT NULL,
   placa VARCHAR(80) DEFAULT NULL,
+  foto VARCHAR(255) DEFAULT NULL,
 
   fecha_compra DATE DEFAULT NULL,
   fecha_instalacion DATE DEFAULT NULL,
@@ -222,3 +228,36 @@ CREATE TABLE IF NOT EXISTS mantenimiento_repuestos (
   CONSTRAINT fk_mr_mant FOREIGN KEY (mantenimiento_id) REFERENCES mantenimientos(id),
   CONSTRAINT fk_mr_rep FOREIGN KEY (repuesto_id) REFERENCES repuestos(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==========================================
+-- MIGRACIONES (Ejecutar en BD existentes)
+-- IMPORTANTE: Estas consultas usan IF NOT EXISTS para evitar errores si ya existen
+-- ==========================================
+
+-- 1. Agregar campos faltantes a tenants (empresas)
+-- Verificar y agregar uno por uno
+SET @db_name = DATABASE();
+SET @column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tenants' AND COLUMN_NAME = 'departamento');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE tenants ADD COLUMN departamento VARCHAR(100) DEFAULT NULL AFTER ciudad', 'SELECT ''departamento already exists''');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tenants' AND COLUMN_NAME = 'representante');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE tenants ADD COLUMN representante VARCHAR(150) DEFAULT NULL AFTER departamento', 'SELECT ''representante already exists''');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'tenants' AND COLUMN_NAME = 'logo');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE tenants ADD COLUMN logo VARCHAR(255) DEFAULT NULL AFTER representante', 'SELECT ''logo already exists''');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 2. Agregar foto a activos (equipos)
+SET @column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'activos' AND COLUMN_NAME = 'foto');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE activos ADD COLUMN foto VARCHAR(255) DEFAULT NULL AFTER placa', 'SELECT ''foto already exists''');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 3. Agregar subdependencias (area padre)
+SET @column_exists = (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = @db_name AND TABLE_NAME = 'areas' AND COLUMN_NAME = 'area_parent_id');
+SET @sql = IF(@column_exists = 0, 'ALTER TABLE areas ADD COLUMN area_parent_id INT DEFAULT NULL AFTER sede_id', 'SELECT ''area_parent_id already exists''');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 4. Actualizar estado de tenants si tiene formato antiguo
+-- UPDATE tenants SET estado = 'INACTIVO' WHERE estado = 'SUSPENDIDO';

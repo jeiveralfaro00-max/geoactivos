@@ -3,7 +3,17 @@ require_once __DIR__ . '/../../core/Helpers.php';
 require_once __DIR__ . '/../../core/Auth.php';
 require_once __DIR__ . '/../../config/db.php';
 
-$tenantId = Auth::tenantId();
+Auth::requireLogin();
+
+$isSuper = Auth::isSuperadmin();
+$tenantIdParam = (int)($_GET['tenant_id'] ?? 0);
+
+if ($isSuper && $tenantIdParam > 0) {
+    $tenantId = $tenantIdParam;
+} else {
+    $tenantId = Auth::tenantId();
+}
+
 $id = (int)($_GET['id'] ?? 0);
 
 // Si venimos desde "Agregar componente" en detalle
@@ -90,6 +100,7 @@ $data = [
   'modelo' => '',
   'serial' => '',
   'placa' => '',
+  'foto' => '',
 
   'fecha_compra' => '',
   'fecha_instalacion' => '',
@@ -103,7 +114,7 @@ if ($id > 0) {
   $st = db()->prepare("
     SELECT categoria_id, tipo_activo_id, activo_padre_id, marca_id, area_id, proveedor_id,
            codigo_interno, nombre, hostname, usa_dhcp, ip_fija, mac,
-           modelo, serial, placa,
+           modelo, serial, placa, foto,
            fecha_compra, fecha_instalacion, garantia_hasta,
            estado, observaciones
     FROM activos
@@ -160,6 +171,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   $estado = $_POST['estado'] ?? 'ACTIVO';
   $obs = trim($_POST['observaciones'] ?? '');
+  
+  // Handle foto upload
+  $fotoUrl = trim($_POST['foto'] ?? '');
+  if (!empty($_FILES['foto_file']['tmp_name']) && $_FILES['foto_file']['error'] === UPLOAD_ERR_OK) {
+      $uploadDir = __DIR__ . '/../../public/uploads/activos/';
+      if (!is_dir($uploadDir)) {
+          mkdir($uploadDir, 0755, true);
+      }
+      $ext = pathinfo($_FILES['foto_file']['name'], PATHINFO_EXTENSION);
+      $filename = 'activo_' . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
+      $targetPath = $uploadDir . $filename;
+      if (move_uploaded_file($_FILES['foto_file']['tmp_name'], $targetPath)) {
+          $fotoUrl = base_url() . '/uploads/activos/' . $filename;
+      }
+  }
 
   // Normalizar código interno: mayúsculas y sin espacios extremos
   $codigo = strtoupper(trim($codigo));
@@ -271,8 +297,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $hostname = ($hostname !== '' ? $hostname : null);
       $macDb    = ($mac !== '' ? $mac : null);
-
-      $ipDb = ($usaDhcp === 1) ? null : ($ipFija !== '' ? $ipFija : null);
+      $fotoDb   = ($fotoUrl !== '' ? $fotoUrl : null);
 
       try {
         if ($id > 0) {
@@ -282,7 +307,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 marca_id=:mar, area_id=:ar, proveedor_id=:pr,
                 codigo_interno=:c, nombre=:n,
                 hostname=:h, usa_dhcp=:dhcp, ip_fija=:ip, mac=:mac,
-                modelo=:m, serial=:s, placa=:p,
+                modelo=:m, serial=:s, placa=:p, foto=:foto,
                 fecha_compra=:fc, fecha_instalacion=:fi, garantia_hasta=:gh,
                 estado=:e, observaciones=:o
             WHERE id=:id AND tenant_id=:t
@@ -292,7 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':mar'=>$marcaId, ':ar'=>$areaId, ':pr'=>$provId,
             ':c'=>$codigo, ':n'=>$nombre,
             ':h'=>$hostname, ':dhcp'=>$usaDhcp, ':ip'=>$ipDb, ':mac'=>$macDb,
-            ':m'=>$modelo, ':s'=>$serial, ':p'=>$placa,
+            ':m'=>$modelo, ':s'=>$serial, ':p'=>$placa, ':foto'=>$fotoDb,
             ':fc'=>$fechaCompra, ':fi'=>$fechaInst, ':gh'=>$garantia,
             ':e'=>$estado, ':o'=>$obs,
             ':id'=>$id, ':t'=>$tenantId
@@ -304,7 +329,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                marca_id, area_id, proveedor_id,
                codigo_interno, nombre,
                hostname, usa_dhcp, ip_fija, mac,
-               modelo, serial, placa,
+               modelo, serial, placa, foto,
                fecha_compra, fecha_instalacion, garantia_hasta,
                estado, observaciones)
             VALUES
@@ -312,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                :mar, :ar, :pr,
                :c, :n,
                :h, :dhcp, :ip, :mac,
-               :m, :s, :p,
+               :m, :s, :p, :foto,
                :fc, :fi, :gh,
                :e, :o)
           ");
@@ -321,7 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ':mar'=>$marcaId, ':ar'=>$areaId, ':pr'=>$provId,
             ':c'=>$codigo, ':n'=>$nombre,
             ':h'=>$hostname, ':dhcp'=>$usaDhcp, ':ip'=>$ipDb, ':mac'=>$macDb,
-            ':m'=>$modelo, ':s'=>$serial, ':p'=>$placa,
+            ':m'=>$modelo, ':s'=>$serial, ':p'=>$placa, ':foto'=>$fotoDb,
             ':fc'=>$fechaCompra, ':fi'=>$fechaInst, ':gh'=>$garantia,
             ':e'=>$estado, ':o'=>$obs
           ]);
@@ -390,7 +415,7 @@ require __DIR__ . '/../layout/sidebar.php';
       <div class="alert alert-danger text-sm"><?= e($error) ?></div>
     <?php endif; ?>
 
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
       <input type="hidden" name="activo_padre_id" value="<?= (int)($data['activo_padre_id'] ?: 0) ?>">
 
       <div class="form-row">
@@ -532,6 +557,22 @@ require __DIR__ . '/../layout/sidebar.php';
           <label>Placa</label>
           <input class="form-control" name="placa" value="<?= e($data['placa']) ?>">
         </div>
+      </div>
+
+      <div class="form-group">
+        <label>Foto del Equipo</label>
+        <?php if (!empty($data['foto'])): ?>
+        <div class="mb-2">
+          <img src="<?= e($data['foto']) ?>" alt="Foto" style="max-width:200px;max-height:150px;border-radius:8px;border:1px solid var(--slate-200);">
+          <div style="font-size:.7rem;color:var(--slate-500);margin-top:4px;">Foto actual</div>
+        </div>
+        <?php endif; ?>
+        <div class="custom-file">
+          <input type="file" class="custom-file-input" id="fotoFile" name="foto_file" accept="image/*">
+          <label class="custom-file-label" for="fotoFile">Seleccionar imagen...</label>
+        </div>
+        <input type="text" class="form-control mt-2" name="foto" value="<?= e($data['foto'] ?? '') ?>" placeholder="O ingresa URL de la foto">
+        <small class="form-text text-muted">Sube una imagen o ingresa una URL</small>
       </div>
 
       <div class="form-row">
